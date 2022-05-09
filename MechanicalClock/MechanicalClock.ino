@@ -39,8 +39,7 @@ int prevMinuteUnits = 8;
 
 int midOffset = 100;            //Amount by which adjacent segments to the middle move away when required
 
-HardwareSerial ToFPGA(1);
-HardwareSerial FromFPGA(2);
+HardwareSerial FPGA(2);
 
 
 char *CmdCode[] = {"RST", "SET", "SEG"};
@@ -111,11 +110,8 @@ void setup()
 //    delay(10);
   }
 
-  //Serial.begin(Baud Rate, Data Protocol, Txd pin, Rxd pin);
   //Serial.begin(Baud Rate, Data Protocol, Rxd pin, Txd pin);
-  // ToFPGA.begin(115200, SERIAL_8N1, 13, 12);
-//  FromFPGA.begin(115200, SERIAL_8N1, 27, 14);
- FromFPGA.begin(115200, SERIAL_8N1, 16, 17);
+  FPGA.begin(115200, SERIAL_8N1, 16, 17);
 
   delay(2000);
 }
@@ -134,11 +130,11 @@ void loop()
     Serial.println("RTC lost confidence in the DateTime!");
   }
 
-//  ToFPGA.print("XXXXXXXXXXXXXXCMD");
+  FPGA.print("A");
   String RxdString = "";
   delay(500); // Too fast, Cannot read on the first try.
-  while (FromFPGA.available()) {
-    RxdString = FromFPGA.readString();
+  while (FPGA.available()) {
+    RxdString = FPGA.readString();
   }
   
   if (RxdString != "") {
