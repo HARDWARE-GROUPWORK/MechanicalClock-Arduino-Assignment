@@ -7,10 +7,10 @@ Adafruit_PWMServoDriver pwmM = Adafruit_PWMServoDriver(0x41);    //Create an obj
 
 int servoFrequency = 50;      //Set servo operating frequency
 
-int segmentHOn[14] = {315, 320, 260, 310, 250, 280, 280, 330, 290, 300, 375, 368, 371, 375}; //On positions for each Hour servo
-int segmentMOn[14] = {382, 395, 378, 315, 375, 340, 345, 380, 385, 365, 290, 365, 315, 365}; //On positions for each Minute servo
-int segmentHOff[14] = {115, 120, 95, 100, 90, 100, 100, 120, 100, 120, 550, 200, 515, 200}; //Off positions for each Hour servo
-int segmentMOff[14] = {200, 200, 550, 440, 200, 480, 200, 200, 200, 550, 450, 200, 430, 200}; //Off positions for each Minute servo
+int segmentHOn[14] = {315, 320, 260, 310, 250, 280, 280, 330, 290, 320, 250, 330, 270, 300}; //On positions for each Hour servo
+int segmentMOn[14] = {300, 245, 335, 260, 240, 240, 295, 260, 230, 250, 230, 330, 300, 265}; //On positions for each Minute servo
+int segmentHOff[14] = {115, 120, 95, 100, 90, 100, 100, 120, 100, 120, 95, 130, 100, 110}; //Off positions for each Hour servo
+int segmentMOff[14] = {100, 10, 120, 90, 90, 95, 100, 100, 85, 90, 90, 120, 110, 110}; //Off positions for each Minute servo
 int digits[10][7] = {{1, 1, 1, 1, 1, 1, 0}, {0, 1, 1, 0, 0, 0, 0}, {1, 1, 0, 1, 1, 0, 1}
   , {1, 1, 1, 1, 0, 0, 1}, {0, 1, 1, 0, 0, 1, 1}, {1, 0, 1, 1, 0, 1, 1}
   , {1, 0, 1, 1, 1, 1, 1}, {1, 1, 1, 0, 0, 0, 0}, {1, 1, 1, 1, 1, 1, 1}
