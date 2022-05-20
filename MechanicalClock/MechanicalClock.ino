@@ -27,14 +27,10 @@ int digits[10][7] = {{1, 1, 1, 1, 1, 1, 0}, {0, 1, 1, 0, 0, 0, 0}, {1, 1, 0, 1, 
 ThreeWire myWire(4, 5, 2); // IO, SCLK, CE
 RtcDS1302<ThreeWire> Rtc(myWire);
 
-//int hourUnits = 8;      // Wrong wiring actually hourTens           //Create variables to store each 7 segment display numeral
-//int hourTens = 8;       // Wrong wiring actually hourUnits
-//int minuteUnits = 8;    // Wrong wiring actually minuteTens
-//int minuteTens = 8;     // Wrong wiring actually minuteUnits
-int hourUnits = 2;                 //Create variables to store each 7 segment display numeral
-int hourTens = 1;
-int minuteUnits = 4;
-int minuteTens = 3;
+int hourUnits = 8;      // Wrong wiring actually hourTens           //Create variables to store each 7 segment display numeral
+int hourTens = 8;       // Wrong wiring actually hourUnits
+int minuteUnits = 8;    // Wrong wiring actually minuteTens
+int minuteTens = 8;     // Wrong wiring actually minuteUnits
 
 int prevHourUnits = 8;           //Create variables to store the previous numeral displayed on each
 int prevHourTens = 8;          //This is required to move the segments adjacent to the middle ones out of the way when they move
@@ -44,7 +40,6 @@ int prevMinuteTens = 8;
 int midOffset = 100;            //Amount by which adjacent segments to the middle move away when required
 
 HardwareSerial FPGA(2);
-
 
 char *CmdCode[] = {"GET", "SET", "SEG"};
 String currentCmd = "XXX";
@@ -106,14 +101,6 @@ void setup()
   pwmH.setPWMFreq(servoFrequency);          //Set the servo operating frequency
   pwmM.setPWMFreq(servoFrequency);
 
-  for (int i = 0 ; i <= 13 ; i++) //Set all of the servos to on or up (88:88 displayed)
-  {
-    pwmH.setPWM(i, 0, segmentHOn[i]);
-    delay(10);
-    pwmM.setPWM(i, 0, segmentMOn[i]);
-    delay(10);
-  }
-  delay(1000);
   for (int i = 0 ; i <= 13 ; i++) //Set all of the servos to on or up (00:00 displayed)
   {
     pwmH.setPWM(i, 0, segmentHOff[i]);
@@ -121,6 +108,17 @@ void setup()
     pwmM.setPWM(i, 0, segmentMOff[i]);
     delay(10);
   }
+
+  delay(1000);
+
+  for (int i = 0 ; i <= 13 ; i++) //Set all of the servos to on or up (88:88 displayed)
+  {
+    pwmH.setPWM(i, 0, segmentHOn[i]);
+    delay(10);
+    pwmM.setPWM(i, 0, segmentMOn[i]);
+    delay(10);
+  }
+
 
   //Serial.begin(Baud Rate, Data Protocol, Rxd pin, Txd pin);
   FPGA.begin(9600, SERIAL_8N1, 16, 17);
@@ -142,13 +140,13 @@ void printDateTime(const RtcDateTime & dt)
              dt.Hour(),
              dt.Minute(),
              dt.Second() );
-  //    Serial.print("Time Now : ");
-  //    Serial.println(datestring);
+  //  Serial.print("Time Now : ");
+  //  Serial.println(datestring);
 }
 
 void packageDateTime(const RtcDateTime & dt)
 {
-  char datestring[15];
+  char datestring[18];
 
   snprintf_P(datestring,
              countof(datestring),
@@ -162,7 +160,89 @@ void packageDateTime(const RtcDateTime & dt)
   Serial.print("Payload : ");
   Serial.print(datestring);
   Serial.println(CmdCode[2]);
-  FPGA.write(datestring + CmdCode[2]);
+
+  strcat(datestring, CmdCode[2]);
+  FPGA.write(datestring);
+}
+
+void updateMid()                                              //Function to move the middle segements and adjacent ones out of the way
+{
+  if (digits[minuteTens][6] != digits[prevMinuteTens][6])   //Move adjacent segments for Minute units
+  {
+    if (digits[prevMinuteTens][1] == 1)
+      pwmM.setPWM(1, 0, segmentMOn[1] - midOffset);
+    if (digits[prevMinuteTens][6] == 1)
+      pwmM.setPWM(5, 0, segmentMOn[5] + midOffset);
+  }
+  delay(100);                                                 //Delay allows adjacent segments to move before moving middle
+  if (digits[minuteTens][6] == 1)                            //Move Minute units middle segment if required
+    pwmM.setPWM(6, 0, segmentMOn[6]);
+  else
+    pwmM.setPWM(6, 0, segmentMOff[6]);
+  if (digits[minuteUnits][6] != digits[prevMinuteUnits][6])     //Move adjacent segments for Minute tens
+  {
+    if (digits[prevMinuteUnits][1] == 1)
+      pwmM.setPWM(8, 0, segmentMOn[8] - midOffset);
+    if (digits[prevMinuteUnits][6] == 1)
+      pwmM.setPWM(12, 0, segmentMOn[12] + midOffset);
+  }
+  delay(100);                                                 //Delay allows adjacent segments to move before moving middle
+  if (digits[minuteUnits][6] == 1)                             //Move Minute tens middle segment if required
+    pwmM.setPWM(13, 0, segmentMOn[13]);
+  else
+    pwmM.setPWM(13, 0, segmentMOff[13]);
+  if (digits[hourTens][6] != digits[prevHourTens][6])       //Move adjacent segments for Hour units
+  {
+    if (digits[prevHourTens][1] == 1)
+      pwmH.setPWM(1, 0, segmentHOn[1] - midOffset);
+    if (digits[prevHourTens][6] == 1)
+      pwmH.setPWM(5, 0, segmentHOn[5] + midOffset);
+  }
+  delay(100);                                                 //Delay allows adjacent segments to move before moving middle
+  if (digits[hourTens][6] == 1)                              //Move Hour units middle segment if required
+    pwmH.setPWM(6, 0, segmentHOn[6]);
+  else
+    pwmH.setPWM(6, 0, segmentHOff[6]);
+  if (digits[hourUnits][6] != digits[prevHourUnits][6])         //Move adjacent segments for Hour tens
+  {
+    if (digits[prevHourUnits][1] == 1)
+      pwmH.setPWM(8, 0, segmentHOn[8] - midOffset);
+    if (digits[prevHourUnits][6] == 1)
+      pwmH.setPWM(12, 0, segmentHOn[12] + midOffset);
+  }
+  delay(100);                                                 //Delay allows adjacent segments to move before moving middle
+  if (digits[hourUnits][6] == 1)                               //Move Hour tens middle segment if required
+    pwmH.setPWM(13, 0, segmentHOn[13]);
+  else
+    pwmH.setPWM(13, 0, segmentHOff[13]);
+}
+
+void updateDisplay ()                               //Function to update the displayed time
+{
+  updateMid();                                      //Move the segments out of the way of the middle segment and then move the middle segments
+  for (int i = 0 ; i <= 5 ; i++)                    //Move the remaining segments
+  {
+    if (digits[hourUnits][i] == 1)                   //Update the hour tens
+      pwmH.setPWM(i + 7, 0, segmentHOn[i + 7]);
+    else
+      pwmH.setPWM(i + 7, 0, segmentHOff[i + 7]);
+    delay(10);
+    if (digits[hourTens][i] == 1)                  //Update the hour units
+      pwmH.setPWM(i, 0, segmentHOn[i]);
+    else
+      pwmH.setPWM(i, 0, segmentHOff[i]);
+    delay(10);
+    if (digits[minuteUnits][i] == 1)                 //Update the minute tens
+      pwmM.setPWM(i + 7, 0, segmentMOn[i + 7]);
+    else
+      pwmM.setPWM(i + 7, 0, segmentMOff[i + 7]);
+    delay(10);
+    if (digits[minuteTens][i] == 1)                //Update the minute units
+      pwmM.setPWM(i, 0, segmentMOn[i]);
+    else
+      pwmM.setPWM(i, 0, segmentMOff[i]);
+    delay(10);
+  }
 }
 
 void loop()
@@ -178,126 +258,41 @@ void loop()
     Serial.println("RTC lost confidence in the DateTime!");
   }
 
-  FPGA.write("ABCDEFGHIJKLMNSEG");
-
   String RxdString = "";
-  delay(500); // Too fast, Cannot read on the first try.
   while (FPGA.available()) {
     RxdString = FPGA.readString();
   }
 
   if (RxdString != "") {
     Serial.println(RxdString);
-    currentCmd = RxdString.substring(14, 17);
-    currentData = RxdString.substring(0, 14);
-    Serial.println(currentCmd);
-    Serial.println(currentData);
+    currentCmd = RxdString.substring(6, 9);
+    //    Serial.println(currentCmd);
 
     if (currentCmd == CmdCode[2]) { // SEG
-      currentData = currentData.substring(10, 14);
-      hourUnits = currentData.substring(11, 12).toInt();
-      hourTens = currentData.substring(10, 11).toInt();
-      minuteUnits = currentData.substring(13, 14).toInt();
-      minuteTens = currentData.substring(12, 13).toInt();
+      currentData = RxdString.substring(0, 6);
+      hourTens = currentData.substring(0, 1).toInt();
+      hourUnits = currentData.substring(1, 2).toInt();
+      minuteTens = currentData.substring(2, 3).toInt();
+      minuteUnits = currentData.substring(3, 4).toInt();
     } else if (currentCmd == CmdCode[1]) { // SET
-      currentData = currentData.substring(10, 14);
-      hourUnits = currentData.substring(11, 12).toInt();
-      hourTens = currentData.substring(10, 11).toInt();
-      minuteUnits = currentData.substring(13, 14).toInt();
-      minuteTens = currentData.substring(12, 13).toInt();
+      currentData = currentData.substring(0, 6);
+      int newHour = currentData.substring(0, 2).toInt();
+      int newMinute = currentData.substring(2, 4).toInt();
+      int newSec = currentData.substring(4, 6).toInt();
+      Rtc.SetDateTime(RtcDateTime(2000, 1, 1, newHour, newMinute, newSec));
+      Serial.println("Save new time!");
     } else if (currentCmd == CmdCode[0]) { // GET
-        packageDateTime(now);
+      packageDateTime(now);
     }
     else {
       Serial.println("Invalid command by UART!");
     }
-
-    if (minuteTens != prevMinuteTens) //If minute units has changed, update display
-      updateDisplay();
-
-    prevHourUnits = hourUnits;            //Update previous displayed numerals
-    prevHourTens = hourTens;
-    prevMinuteUnits = minuteUnits;
-    prevMinuteTens = minuteTens;
-
   }
+  // if (minuteUnits != prevMinuteUnits) //If minute units has changed, update display
+    updateDisplay();
 
-  void updateMid()                                              //Function to move the middle segements and adjacent ones out of the way
-  {
-    if (digits[minuteTens][6] != digits[prevMinuteTens][6])   //Move adjacent segments for Minute units
-    {
-      if (digits[prevMinuteTens][1] == 1)
-        pwmM.setPWM(1, 0, segmentMOn[1] - midOffset);
-      if (digits[prevMinuteTens][6] == 1)
-        pwmM.setPWM(5, 0, segmentMOn[5] + midOffset);
-    }
-    delay(100);                                                 //Delay allows adjacent segments to move before moving middle
-    if (digits[minuteTens][6] == 1)                            //Move Minute units middle segment if required
-      pwmM.setPWM(6, 0, segmentMOn[6]);
-    else
-      pwmM.setPWM(6, 0, segmentMOff[6]);
-    if (digits[minuteUnits][6] != digits[prevMinuteUnits][6])     //Move adjacent segments for Minute tens
-    {
-      if (digits[prevMinuteUnits][1] == 1)
-        pwmM.setPWM(8, 0, segmentMOn[8] - midOffset);
-      if (digits[prevMinuteUnits][6] == 1)
-        pwmM.setPWM(12, 0, segmentMOn[12] + midOffset);
-    }
-    delay(100);                                                 //Delay allows adjacent segments to move before moving middle
-    if (digits[minuteUnits][6] == 1)                             //Move Minute tens middle segment if required
-      pwmM.setPWM(13, 0, segmentMOn[13]);
-    else
-      pwmM.setPWM(13, 0, segmentMOff[13]);
-    if (digits[hourTens][6] != digits[prevHourTens][6])       //Move adjacent segments for Hour units
-    {
-      if (digits[prevHourTens][1] == 1)
-        pwmH.setPWM(1, 0, segmentHOn[1] - midOffset);
-      if (digits[prevHourTens][6] == 1)
-        pwmH.setPWM(5, 0, segmentHOn[5] + midOffset);
-    }
-    delay(100);                                                 //Delay allows adjacent segments to move before moving middle
-    if (digits[hourTens][6] == 1)                              //Move Hour units middle segment if required
-      pwmH.setPWM(6, 0, segmentHOn[6]);
-    else
-      pwmH.setPWM(6, 0, segmentHOff[6]);
-    if (digits[hourUnits][6] != digits[prevHourUnits][6])         //Move adjacent segments for Hour tens
-    {
-      if (digits[prevHourUnits][1] == 1)
-        pwmH.setPWM(8, 0, segmentHOn[8] - midOffset);
-      if (digits[prevHourUnits][6] == 1)
-        pwmH.setPWM(12, 0, segmentHOn[12] + midOffset);
-    }
-    delay(100);                                                 //Delay allows adjacent segments to move before moving middle
-    if (digits[hourUnits][6] == 1)                               //Move Hour tens middle segment if required
-      pwmH.setPWM(13, 0, segmentHOn[13]);
-    else
-      pwmH.setPWM(13, 0, segmentHOff[13]);
-  }
-
-  void updateDisplay ()                               //Function to update the displayed time
-  {
-    updateMid();                                      //Move the segments out of the way of the middle segment and then move the middle segments
-    for (int i = 0 ; i <= 5 ; i++)                    //Move the remaining segments
-    {
-      if (digits[hourUnits][i] == 1)                   //Update the hour tens
-        pwmH.setPWM(i + 7, 0, segmentHOn[i + 7]);
-      else
-        pwmH.setPWM(i + 7, 0, segmentHOff[i + 7]);
-      delay(10);
-      if (digits[hourTens][i] == 1)                  //Update the hour units
-        pwmH.setPWM(i, 0, segmentHOn[i]);
-      else
-        pwmH.setPWM(i, 0, segmentHOff[i]);
-      delay(10);
-      if (digits[minuteUnits][i] == 1)                 //Update the minute tens
-        pwmM.setPWM(i + 7, 0, segmentMOn[i + 7]);
-      else
-        pwmM.setPWM(i + 7, 0, segmentMOff[i + 7]);
-      delay(10);
-      if (digits[minuteTens][i] == 1)                //Update the minute units
-        pwmM.setPWM(i, 0, segmentMOn[i]);
-      else
-        pwmM.setPWM(i, 0, segmentMOff[i]);
-      delay(10);
-    }
-  }
+  prevHourUnits = hourUnits;            //Update previous displayed numerals
+  prevHourTens = hourTens;
+  prevMinuteUnits = minuteUnits;
+  prevMinuteTens = minuteTens;
+}
