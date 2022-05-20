@@ -7,9 +7,9 @@ Adafruit_PWMServoDriver pwmM = Adafruit_PWMServoDriver(0x41);    //Create an obj
 
 int servoFrequency = 50;      //Set servo operating frequency
 
-int segmentHOn[14] = {385, 375, 385, 375, 382, 375, 354, 367, 375, 385, 375, 368, 371, 375}; //On positions for each Hour servo
+int segmentHOn[14] = {315, 320, 260, 310, 250, 280, 280, 330, 290, 300, 375, 368, 371, 375}; //On positions for each Hour servo
 int segmentMOn[14] = {382, 395, 378, 315, 375, 340, 345, 380, 385, 365, 290, 365, 315, 365}; //On positions for each Minute servo
-int segmentHOff[14] = {200, 200, 550, 480, 200, 520, 200, 200, 200, 480, 550, 200, 515, 200}; //Off positions for each Hour servo
+int segmentHOff[14] = {115, 120, 95, 100, 90, 100, 100, 120, 100, 120, 550, 200, 515, 200}; //Off positions for each Hour servo
 int segmentMOff[14] = {200, 200, 550, 440, 200, 480, 200, 200, 200, 550, 450, 200, 430, 200}; //Off positions for each Minute servo
 int digits[10][7] = {{1, 1, 1, 1, 1, 1, 0}, {0, 1, 1, 0, 0, 0, 0}, {1, 1, 0, 1, 1, 0, 1}
   , {1, 1, 1, 1, 0, 0, 1}, {0, 1, 1, 0, 0, 1, 1}, {1, 0, 1, 1, 0, 1, 1}
@@ -109,6 +109,23 @@ void setup()
     pwmM.setPWM(i, 0, segmentMOn[i]);
     delay(10);
   }
+
+  delay(1000);
+
+  for (int i = 0 ; i <= 13 ; i++) //Set all of the servos to on or up (00:00 displayed)
+  {
+    pwmH.setPWM(i, 0, segmentHOff[i]);
+    delay(10);
+    pwmM.setPWM(i, 0, segmentMOff[i]);
+    delay(10);
+  }
+
+  // DEBUG
+  //  int target = 0;
+  //  delay(1000);
+  //  pwmH.setPWM(target, 0, segmentHOff[target]);
+  //  delay(1000);
+  //  pwmH.setPWM(target, 0, segmentHOn[target]);
 
   //Serial.begin(Baud Rate, Data Protocol, Rxd pin, Txd pin);
   FPGA.begin(9600, SERIAL_8N1, 16, 17);
