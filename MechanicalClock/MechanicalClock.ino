@@ -8,9 +8,9 @@ Adafruit_PWMServoDriver pwmM = Adafruit_PWMServoDriver(0x41);    //Create an obj
 int servoFrequency = 50;      //Set servo operating frequency
 
 int segmentHOn[14] = {315, 320, 260, 310, 250, 280, 280, 330, 290, 320, 250, 330, 270, 300}; //On positions for each Hour servo
-int segmentMOn[14] = {300, 245, 335, 260, 240, 240, 295, 260, 230, 250, 230, 330, 300, 265}; //On positions for each Minute servo
+int segmentMOn[14] = {300, 245, 335, 260, 240, 240, 295, 260, 230, 250, 230, 330, 300, 255}; //On positions for each Minute servo
 int segmentHOff[14] = {115, 120, 95, 100, 90, 100, 100, 120, 100, 120, 95, 130, 100, 110}; //Off positions for each Hour servo
-int segmentMOff[14] = {100, 10, 120, 90, 90, 95, 100, 100, 85, 90, 90, 120, 110, 110}; //Off positions for each Minute servo
+int segmentMOff[14] = {100, 10, 120, 90, 90, 90, 100, 100, 85, 90, 90, 120, 110, 110}; //Off positions for each Minute servo
 int digits[10][7] = {{1, 1, 1, 1, 1, 1, 0}, {0, 1, 1, 0, 0, 0, 0}, {1, 1, 0, 1, 1, 0, 1}
   , {1, 1, 1, 1, 0, 0, 1}, {0, 1, 1, 0, 0, 1, 1}, {1, 0, 1, 1, 0, 1, 1}
   , {1, 0, 1, 1, 1, 1, 1}, {1, 1, 1, 0, 0, 0, 0}, {1, 1, 1, 1, 1, 1, 1}
@@ -27,10 +27,14 @@ int digits[10][7] = {{1, 1, 1, 1, 1, 1, 0}, {0, 1, 1, 0, 0, 0, 0}, {1, 1, 0, 1, 
 ThreeWire myWire(4, 5, 2); // IO, SCLK, CE
 RtcDS1302<ThreeWire> Rtc(myWire);
 
-int hourTens = 8;                 //Create variables to store each 7 segment display numeral
-int hourUnits = 8;
-int minuteTens = 8;
-int minuteUnits = 8;
+//int hourTens = 8;                 //Create variables to store each 7 segment display numeral
+//int hourUnits = 8;
+//int minuteTens = 8;
+//int minuteUnits = 8;
+int hourTens = 1;                 //Create variables to store each 7 segment display numeral
+int hourUnits = 2;
+int minuteTens = 3;
+int minuteUnits = 4;
 
 int prevHourTens = 8;           //Create variables to store the previous numeral displayed on each
 int prevHourUnits = 8;          //This is required to move the segments adjacent to the middle ones out of the way when they move
@@ -109,9 +113,7 @@ void setup()
     pwmM.setPWM(i, 0, segmentMOn[i]);
     delay(10);
   }
-
   delay(1000);
-
   for (int i = 0 ; i <= 13 ; i++) //Set all of the servos to on or up (00:00 displayed)
   {
     pwmH.setPWM(i, 0, segmentHOff[i]);
@@ -119,13 +121,6 @@ void setup()
     pwmM.setPWM(i, 0, segmentMOff[i]);
     delay(10);
   }
-
-  // DEBUG
-  //  int target = 0;
-  //  delay(1000);
-  //  pwmH.setPWM(target, 0, segmentHOff[target]);
-  //  delay(1000);
-  //  pwmH.setPWM(target, 0, segmentHOn[target]);
 
   //Serial.begin(Baud Rate, Data Protocol, Rxd pin, Txd pin);
   FPGA.begin(9600, SERIAL_8N1, 16, 17);
@@ -177,14 +172,14 @@ void loop()
     //        break;
   }
 
-  //    if (minuteUnits != prevMinuteUnits) //If minute units has changed, update display
-  //      updateDisplay();
-  //
-  //    prevHourTens = hourTens;            //Update previous displayed numerals
-  //    prevHourUnits = hourUnits;
-  //    prevMinuteTens = minuteTens;
-  //    prevMinuteUnits = minuteUnits;
-  //  }
+  if (minuteUnits != prevMinuteUnits) //If minute units has changed, update display
+    updateDisplay();
+
+  prevHourTens = hourTens;            //Update previous displayed numerals
+  prevHourUnits = hourUnits;
+  prevMinuteTens = minuteTens;
+  prevMinuteUnits = minuteUnits;
+
 }
 
 #define countof(a) (sizeof(a) / sizeof(a[0]))
