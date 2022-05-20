@@ -46,7 +46,7 @@ int midOffset = 100;            //Amount by which adjacent segments to the middl
 HardwareSerial FPGA(2);
 
 
-char *CmdCode[] = {"RST", "SET", "SEG"};
+char *CmdCode[] = {"GET", "SET", "SEG"};
 String currentCmd = "XXX";
 String currentData = "XXXXXXXXXXXXXX";
 
@@ -127,12 +127,49 @@ void setup()
   delay(2000);
 }
 
+#define countof(a) (sizeof(a) / sizeof(a[0]))
+
+void printDateTime(const RtcDateTime & dt)
+{
+  char datestring[20];
+
+  snprintf_P(datestring,
+             countof(datestring),
+             PSTR("%02u/%02u/%04u %02u:%02u:%02u"),
+             dt.Month(),
+             dt.Day(),
+             dt.Year(),
+             dt.Hour(),
+             dt.Minute(),
+             dt.Second() );
+  //    Serial.print("Time Now : ");
+  //    Serial.println(datestring);
+}
+
+void packageDateTime(const RtcDateTime & dt)
+{
+  char datestring[15];
+
+  snprintf_P(datestring,
+             countof(datestring),
+             PSTR("%02u%02u%04u%02u%02u%02u"),
+             dt.Month(),
+             dt.Day(),
+             dt.Year(),
+             dt.Hour(),
+             dt.Minute(),
+             dt.Second() );
+  Serial.print("Payload : ");
+  Serial.print(datestring);
+  Serial.println(CmdCode[2]);
+  FPGA.write(datestring + CmdCode[2]);
+}
+
 void loop()
 {
   RtcDateTime now = Rtc.GetDateTime();
 
   printDateTime(now);
-  packageDateTime(now);
 
   if (!now.IsValid())
   {
@@ -156,20 +193,23 @@ void loop()
     Serial.println(currentCmd);
     Serial.println(currentData);
 
-    switch (currentCmd) {
-      case CmdCode[2]: // SEG
-        currentData = currentData.substring(10, 14);
-        hourUnits = currentData.substring(11, 12).toInt();
-        hourTens = currentData.substring(10, 11).toInt();
-        minuteUnits = currentData.substring(13, 14).toInt();
-        minuteTens = currentData.substring(12, 13).toInt();
-        break;
-      case CmdCode[1]: // SET
-        // statements
-        break;
-      default:
-        Serial.println("Invalid command by UART!");
-        break;
+    if (currentCmd == CmdCode[2]) { // SEG
+      currentData = currentData.substring(10, 14);
+      hourUnits = currentData.substring(11, 12).toInt();
+      hourTens = currentData.substring(10, 11).toInt();
+      minuteUnits = currentData.substring(13, 14).toInt();
+      minuteTens = currentData.substring(12, 13).toInt();
+    } else if (currentCmd == CmdCode[1]) { // SET
+      currentData = currentData.substring(10, 14);
+      hourUnits = currentData.substring(11, 12).toInt();
+      hourTens = currentData.substring(10, 11).toInt();
+      minuteUnits = currentData.substring(13, 14).toInt();
+      minuteTens = currentData.substring(12, 13).toInt();
+    } else if (currentCmd == CmdCode[0]) { // GET
+        packageDateTime(now);
+    }
+    else {
+      Serial.println("Invalid command by UART!");
     }
 
     if (minuteTens != prevMinuteTens) //If minute units has changed, update display
@@ -180,43 +220,6 @@ void loop()
     prevMinuteUnits = minuteUnits;
     prevMinuteTens = minuteTens;
 
-  }
-
-#define countof(a) (sizeof(a) / sizeof(a[0]))
-
-  void printDateTime(const RtcDateTime & dt)
-  {
-    char datestring[20];
-
-    snprintf_P(datestring,
-               countof(datestring),
-               PSTR("%02u/%02u/%04u %02u:%02u:%02u"),
-               dt.Month(),
-               dt.Day(),
-               dt.Year(),
-               dt.Hour(),
-               dt.Minute(),
-               dt.Second() );
-    //Serial.print("Time Now : ");
-    //Serial.println(datestring);
-  }
-
-  void packageDateTime(const RtcDateTime & dt)
-  {
-    char datestring[15];
-
-    snprintf_P(datestring,
-               countof(datestring),
-               PSTR("%02u%02u%04u%02u%02u%02u"),
-               dt.Month(),
-               dt.Day(),
-               dt.Year(),
-               dt.Hour(),
-               dt.Minute(),
-               dt.Second() );
-    //  Serial.print("Payload : ");
-    //  Serial.print(datestring);
-    //  Serial.println(CmdCode[2]);
   }
 
   void updateMid()                                              //Function to move the middle segements and adjacent ones out of the way
