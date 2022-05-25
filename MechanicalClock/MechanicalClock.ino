@@ -49,6 +49,10 @@ char *CmdCode[] = {"SET", "SEG"};
 String currentCmd = "XXX";
 String currentData = "XXXXXXXXXXXXXX";
 
+unsigned long now_t = 0;
+unsigned long prev_t = 0;
+bool isPress = 0;
+
 #define countof(a) (sizeof(a) / sizeof(a[0]))
 
 void packageDateTime(const RtcDateTime & dt)
@@ -147,6 +151,12 @@ void updateDisplay ()                               //Function to update the dis
   }
 }
 
+//unsigned long now_t = 0;
+//unsigned long prev_t = 0;
+unsigned long seconds = 0;
+unsigned long minutes = 0;
+//bool isPress = 0;
+
 void setToNow(const RtcDateTime & dt)
 {
   char datestring[20];
@@ -157,11 +167,36 @@ void setToNow(const RtcDateTime & dt)
              dt.Hour(),
              dt.Minute(),
              dt.Second() );
-  hourTens = datestring[0]-'0';
-  hourUnits = datestring[1]-'0';
-  minuteTens = datestring[2]-'0';
-  minuteUnits = datestring[3]-'0';
-  updateDisplay();
+  //  hourTens = datestring[0]-'0';
+  //  hourUnits = datestring[1]-'0';
+  //  minuteTens = datestring[2]-'0';
+  //  minuteUnits = datestring[3]-'0';
+
+
+  if (now_t - prev_t >= 2000) {
+    seconds++;
+    prev_t = now_t;
+  }
+
+  if (seconds >= 60) {
+    seconds = 0;
+    minutes++;
+  }
+
+  if (minutes >= 24) {
+    minutes = 0;
+  }
+
+  //  hourTens = 0;
+  //  hourUnits = datestring[2]-'0';
+  //  minuteTens = datestring[3]-'0';
+  //  minuteUnits = datestring[4]-'0';
+
+  hourTens = minutes / 10;
+  hourUnits = minutes % 10;
+  minuteTens = seconds / 10;
+  minuteUnits = seconds % 10;
+  //  updateDisplay();
 }
 
 void setup()
@@ -262,30 +297,25 @@ void printDateTime(const RtcDateTime & dt)
   //    Serial.println(datestring);
 }
 
-unsigned long now_t = 0;
-unsigned long prev_t = 0;
-
-bool isPress = 0;
-
 void loop()
 {
-    RtcDateTime now = Rtc.GetDateTime();
+  RtcDateTime now = Rtc.GetDateTime();
   // read the state of the switch/button:
   currentState = digitalRead(BUTTON_PIN);
   // if press it will low (or 0)
 
   now_t = millis();
 
-  if(currentState == 0 && isPress == 0 && now_t - prev_t >= 200){
+  if (currentState == 0 && isPress == 0 && now_t - prev_t >= 200) {
     prev_t = now_t;
     isPress = 1;
   }
-  if(isPress == 1){
+  if (isPress == 1) {
     Serial.println("PRESSED");
     packageDateTime(now);
     isPress = 0;
   }
-  
+
   lastState = currentState;
 
   printDateTime(now);
@@ -330,7 +360,10 @@ void loop()
     }
   }
 
-  updateDisplay();
+  setToNow(now);
+  
+  if (minuteUnits != prevMinuteUnits) //If minute units has changed, update display
+    updateDisplay();
 
   prevHourUnits = hourUnits;            //Update previous displayed numerals
   prevHourTens = hourTens;
