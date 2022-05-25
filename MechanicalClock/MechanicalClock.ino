@@ -173,7 +173,7 @@ void setToNow(const RtcDateTime & dt)
   //  minuteUnits = datestring[3]-'0';
 
 
-  if (now_t - prev_t >= 2000) {
+  if (now_t - prev_t >= 1000) {
     seconds++;
     prev_t = now_t;
   }
