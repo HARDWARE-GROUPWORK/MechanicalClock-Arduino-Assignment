@@ -2,6 +2,10 @@
 #include <RtcDS1302.h>
 #include "Adafruit_PWMServoDriver.h"      //Include library for servo driver
 
+#define BUTTON_PIN 23  // GIOP23 pin connected to button
+int currentState;     // the current reading from the input pin
+int lastState = HIGH;  // the previous state from the input pin
+
 Adafruit_PWMServoDriver pwmH = Adafruit_PWMServoDriver(0x40);    //Create an object of Hour driver
 Adafruit_PWMServoDriver pwmM = Adafruit_PWMServoDriver(0x41);    //Create an object of Minute driver (A0 Address Jumper)
 
@@ -60,7 +64,7 @@ void packageDateTime(const RtcDateTime & dt)
   strcat(datestring, "RST");
   Serial.print("Payload : ");
   Serial.println(datestring);
-  FPGA.write(datestring);
+  FPGA.print(datestring);
 }
 
 void updateMid()                                              //Function to move the middle segements and adjacent ones out of the way
@@ -153,10 +157,10 @@ void setToNow(const RtcDateTime & dt)
              dt.Hour(),
              dt.Minute(),
              dt.Second() );
-  hourTens = datestring[0];
-  hourUnits = datestring[1];
-  minuteTens = datestring[2];
-  minuteUnits = datestring[3];
+  hourTens = datestring[0]-'0';
+  hourUnits = datestring[1]-'0';
+  minuteTens = datestring[2]-'0';
+  minuteUnits = datestring[3]-'0';
   updateDisplay();
 }
 
@@ -166,6 +170,8 @@ void setup()
   Serial.print("compiled: ");
   Serial.print(__DATE__);
   Serial.println(__TIME__);
+
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
 
   Rtc.Begin();
 
@@ -236,9 +242,7 @@ void setup()
 
   //Serial.begin(Baud Rate, Data Protocol, Rxd pin, Txd pin);
   FPGA.begin(9600, SERIAL_8N1, 16, 17);
-  delay(2000);
-  //  setToNow(now);
-  //  packageDateTime(now);
+  setToNow(now);
 }
 
 void printDateTime(const RtcDateTime & dt)
@@ -258,12 +262,33 @@ void printDateTime(const RtcDateTime & dt)
   //    Serial.println(datestring);
 }
 
+unsigned long now_t = 0;
+unsigned long prev_t = 0;
+
+bool isPress = 0;
+
 void loop()
 {
-  RtcDateTime now = Rtc.GetDateTime();
+    RtcDateTime now = Rtc.GetDateTime();
+  // read the state of the switch/button:
+  currentState = digitalRead(BUTTON_PIN);
+  // if press it will low (or 0)
+
+  now_t = millis();
+
+  if(currentState == 0 && isPress == 0 && now_t - prev_t >= 200){
+    prev_t = now_t;
+    isPress = 1;
+  }
+  if(isPress == 1){
+    Serial.println("PRESSED");
+    packageDateTime(now);
+    isPress = 0;
+  }
+  
+  lastState = currentState;
 
   printDateTime(now);
-  packageDateTime(now);
 
   if (!now.IsValid())
   {
