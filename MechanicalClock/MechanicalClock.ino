@@ -41,127 +41,25 @@ int midOffset = 100;            //Amount by which adjacent segments to the middl
 
 HardwareSerial FPGA(2);
 
-char *CmdCode[] = {"GET", "SET", "SEG"};
+char *CmdCode[] = {"SET", "SEG"};
 String currentCmd = "XXX";
 String currentData = "XXXXXXXXXXXXXX";
 
-void setup()
-{
-  Serial.begin(115200);
-  Serial.print("compiled: ");
-  Serial.print(__DATE__);
-  Serial.println(__TIME__);
-
-  Rtc.Begin();
-
-  RtcDateTime compiled = RtcDateTime(__DATE__, __TIME__);
-  printDateTime(compiled);
-
-  if (!Rtc.IsDateTimeValid())
-  {
-    // Common Causes:
-    //    1) first time you ran and the device wasn't running yet
-    //    2) the battery on the device is low or even missing
-
-    Serial.println("RTC lost confidence in the DateTime!");
-    Rtc.SetDateTime(compiled);
-  }
-
-  if (Rtc.GetIsWriteProtected())
-  {
-    Serial.println("RTC was write protected, enabling writing now");
-    Rtc.SetIsWriteProtected(false);
-  }
-
-  if (!Rtc.GetIsRunning())
-  {
-    Serial.println("RTC was not actively running, starting now");
-    Rtc.SetIsRunning(true);
-  }
-
-  RtcDateTime now = Rtc.GetDateTime();
-  if (now < compiled)
-  {
-    Serial.println("RTC is older than compile time!  (Updating DateTime)");
-    Rtc.SetDateTime(compiled);
-  }
-  else if (now > compiled)
-  {
-    Serial.println("RTC is newer than compile time. (this is expected)");
-  }
-  else if (now == compiled)
-  {
-    Serial.println("RTC is the same as compile time! (not expected but all is fine)");
-  }
-
-  pwmH.begin();                             //Start each board
-  pwmM.begin();
-  pwmH.setOscillatorFrequency(27000000);    //Set the PWM oscillator frequency, used for fine calibration
-  pwmM.setOscillatorFrequency(27000000);
-  pwmH.setPWMFreq(servoFrequency);          //Set the servo operating frequency
-  pwmM.setPWMFreq(servoFrequency);
-
-  for (int i = 0 ; i <= 13 ; i++) //Set all of the servos to on or up (00:00 displayed)
-  {
-    pwmH.setPWM(i, 0, segmentHOff[i]);
-    delay(10);
-    pwmM.setPWM(i, 0, segmentMOff[i]);
-    delay(10);
-  }
-
-  delay(1000);
-
-  for (int i = 0 ; i <= 13 ; i++) //Set all of the servos to on or up (88:88 displayed)
-  {
-    pwmH.setPWM(i, 0, segmentHOn[i]);
-    delay(10);
-    pwmM.setPWM(i, 0, segmentMOn[i]);
-    delay(10);
-  }
-
-
-  //Serial.begin(Baud Rate, Data Protocol, Rxd pin, Txd pin);
-  FPGA.begin(9600, SERIAL_8N1, 16, 17);
-  delay(2000);
-}
-
 #define countof(a) (sizeof(a) / sizeof(a[0]))
-
-void printDateTime(const RtcDateTime & dt)
-{
-  char datestring[20];
-
-  snprintf_P(datestring,
-             countof(datestring),
-             PSTR("%02u/%02u/%04u %02u:%02u:%02u"),
-             dt.Month(),
-             dt.Day(),
-             dt.Year(),
-             dt.Hour(),
-             dt.Minute(),
-             dt.Second() );
-  //  Serial.print("Time Now : ");
-  //  Serial.println(datestring);
-}
 
 void packageDateTime(const RtcDateTime & dt)
 {
-  char datestring[18];
+  char datestring[10];
 
   snprintf_P(datestring,
              countof(datestring),
-             PSTR("%02u%02u%04u%02u%02u%02u"),
-             dt.Month(),
-             dt.Day(),
-             dt.Year(),
+             PSTR("%02u%02u%02u"),
              dt.Hour(),
              dt.Minute(),
              dt.Second() );
+  strcat(datestring, "RST");
   Serial.print("Payload : ");
-  Serial.print(datestring);
-  Serial.println(CmdCode[2]);
-
-  strcat(datestring, CmdCode[2]);
+  Serial.println(datestring);
   FPGA.write(datestring);
 }
 
@@ -245,11 +143,127 @@ void updateDisplay ()                               //Function to update the dis
   }
 }
 
+void setToNow(const RtcDateTime & dt)
+{
+  char datestring[20];
+
+  snprintf_P(datestring,
+             countof(datestring),
+             PSTR("%02u%02u%02u"),
+             dt.Hour(),
+             dt.Minute(),
+             dt.Second() );
+  hourTens = datestring[0];
+  hourUnits = datestring[1];
+  minuteTens = datestring[2];
+  minuteUnits = datestring[3];
+  updateDisplay();
+}
+
+void setup()
+{
+  Serial.begin(115200);
+  Serial.print("compiled: ");
+  Serial.print(__DATE__);
+  Serial.println(__TIME__);
+
+  Rtc.Begin();
+
+  RtcDateTime compiled = RtcDateTime(__DATE__, __TIME__);
+  printDateTime(compiled);
+
+  //  if (!Rtc.IsDateTimeValid())
+  //  {
+  //    // Common Causes:
+  //    //    1) first time you ran and the device wasn't running yet
+  //    //    2) the battery on the device is low or even missing
+  //
+  //    Serial.println("RTC lost confidence in the DateTime!");
+  //    Rtc.SetDateTime(compiled);
+  //  }
+  //
+  //  if (Rtc.GetIsWriteProtected())
+  //  {
+  //    Serial.println("RTC was write protected, enabling writing now");
+  //    Rtc.SetIsWriteProtected(false);
+  //  }
+  //
+  //  if (!Rtc.GetIsRunning())
+  //  {
+  //    Serial.println("RTC was not actively running, starting now");
+  //    Rtc.SetIsRunning(true);
+  //  }
+
+  RtcDateTime now = Rtc.GetDateTime();
+  //  if (now < compiled)
+  //  {
+  //    Serial.println("RTC is older than compile time!  (Updating DateTime)");
+  //    Rtc.SetDateTime(compiled);
+  //  }
+  //  else if (now > compiled)
+  //  {
+  //    Serial.println("RTC is newer than compile time. (this is expected)");
+  //  }
+  //  else if (now == compiled)
+  //  {
+  //    Serial.println("RTC is the same as compile time! (not expected but all is fine)");
+  //  }
+
+  pwmH.begin();                             //Start each board
+  pwmM.begin();
+  pwmH.setOscillatorFrequency(27000000);    //Set the PWM oscillator frequency, used for fine calibration
+  pwmM.setOscillatorFrequency(27000000);
+  pwmH.setPWMFreq(servoFrequency);          //Set the servo operating frequency
+  pwmM.setPWMFreq(servoFrequency);
+
+  for (int i = 0 ; i <= 13 ; i++) //Set all of the servos to on or up (00:00 displayed)
+  {
+    pwmH.setPWM(i, 0, segmentHOff[i]);
+    delay(10);
+    pwmM.setPWM(i, 0, segmentMOff[i]);
+    delay(10);
+  }
+
+  delay(1000);
+
+  for (int i = 0 ; i <= 13 ; i++) //Set all of the servos to on or up (88:88 displayed)
+  {
+    pwmH.setPWM(i, 0, segmentHOn[i]);
+    delay(10);
+    pwmM.setPWM(i, 0, segmentMOn[i]);
+    delay(10);
+  }
+
+  //Serial.begin(Baud Rate, Data Protocol, Rxd pin, Txd pin);
+  FPGA.begin(9600, SERIAL_8N1, 16, 17);
+  delay(2000);
+  //  setToNow(now);
+  //  packageDateTime(now);
+}
+
+void printDateTime(const RtcDateTime & dt)
+{
+  char datestring[20];
+
+  snprintf_P(datestring,
+             countof(datestring),
+             PSTR("%02u/%02u/%04u %02u:%02u:%02u"),
+             dt.Month(),
+             dt.Day(),
+             dt.Year(),
+             dt.Hour(),
+             dt.Minute(),
+             dt.Second() );
+  //    Serial.print("Time Now : ");
+  //    Serial.println(datestring);
+}
+
 void loop()
 {
   RtcDateTime now = Rtc.GetDateTime();
 
   printDateTime(now);
+  packageDateTime(now);
 
   if (!now.IsValid())
   {
@@ -268,28 +282,30 @@ void loop()
     currentCmd = RxdString.substring(6, 9);
     //    Serial.println(currentCmd);
 
-    if (currentCmd == CmdCode[2]) { // SEG
+    if (currentCmd == CmdCode[1]) { // SEG
       currentData = RxdString.substring(0, 6);
       hourTens = currentData.substring(0, 1).toInt();
       hourUnits = currentData.substring(1, 2).toInt();
       minuteTens = currentData.substring(2, 3).toInt();
       minuteUnits = currentData.substring(3, 4).toInt();
-    } else if (currentCmd == CmdCode[1]) { // SET
-      currentData = currentData.substring(0, 6);
+    } else if (currentCmd == CmdCode[0]) { // SET
+      currentData = RxdString.substring(0, 6);
       int newHour = currentData.substring(0, 2).toInt();
       int newMinute = currentData.substring(2, 4).toInt();
       int newSec = currentData.substring(4, 6).toInt();
+      hourTens = currentData.substring(0, 1).toInt();
+      hourUnits = currentData.substring(1, 2).toInt();
+      minuteTens = currentData.substring(2, 3).toInt();
+      minuteUnits = currentData.substring(3, 4).toInt();
       Rtc.SetDateTime(RtcDateTime(2000, 1, 1, newHour, newMinute, newSec));
       Serial.println("Save new time!");
-    } else if (currentCmd == CmdCode[0]) { // GET
-      packageDateTime(now);
     }
     else {
       Serial.println("Invalid command by UART!");
     }
   }
-  // if (minuteUnits != prevMinuteUnits) //If minute units has changed, update display
-    updateDisplay();
+
+  updateDisplay();
 
   prevHourUnits = hourUnits;            //Update previous displayed numerals
   prevHourTens = hourTens;
