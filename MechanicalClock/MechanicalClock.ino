@@ -178,7 +178,7 @@ void setup()
   pwmH.setPWMFreq(servoFrequency); // Set the servo operating frequency
   pwmM.setPWMFreq(servoFrequency);
 
-  for (int i = 0; i <= 13; i++) // Set all of the servos to on or up (00:00 displayed)
+  for (int i = 0; i <= 13; i++) // Set all of the servos to off or down (00:00 displayed)
   {
     pwmH.setPWM(i, 0, segmentHOff[i]);
     delay(10);
